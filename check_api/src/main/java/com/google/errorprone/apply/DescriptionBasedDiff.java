@@ -45,6 +45,7 @@ public final class DescriptionBasedDiff implements DescriptionListener, Diff {
   private final Set<String> importsToRemove;
   private final EndPosTable endPositions;
   private final Replacements replacements = new Replacements();
+  private final ImportOrganizer importOrganizer;
 
   public static DescriptionBasedDiff create(JCCompilationUnit compilationUnit) {
     return new DescriptionBasedDiff(compilationUnit, false);
@@ -61,6 +62,7 @@ public final class DescriptionBasedDiff implements DescriptionListener, Diff {
     this.importsToAdd = new LinkedHashSet<>();
     this.importsToRemove = new LinkedHashSet<>();
     this.endPositions = compilationUnit.endPositions;
+    importOrganizer = ImportOrganizer.STATIC_FIRST_ORGANIZER;
   }
 
   @Override
@@ -97,7 +99,7 @@ public final class DescriptionBasedDiff implements DescriptionListener, Diff {
   @Override
   public void applyDifferences(SourceFile sourceFile) throws DiffNotApplicableException {
     if (!importsToAdd.isEmpty() || !importsToRemove.isEmpty()) {
-      ImportStatements importStatements = ImportStatements.create(compilationUnit);
+      ImportStatements importStatements = ImportStatements.create(compilationUnit, importOrganizer);
       importStatements.addAll(importsToAdd);
       importStatements.removeAll(importsToRemove);
       replacements.add(

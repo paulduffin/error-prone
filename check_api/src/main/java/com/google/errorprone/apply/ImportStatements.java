@@ -44,13 +44,14 @@ public class ImportStatements {
   private final SortedSet<String> importStrings;
   private boolean hasExistingImports;
 
-  public static ImportStatements create(JCCompilationUnit compilationUnit) {
+  public static ImportStatements create(
+      JCCompilationUnit compilationUnit, ImportOrganizer importOrganizer) {
     return new ImportStatements((JCExpression) compilationUnit.getPackageName(),
-        compilationUnit.getImports(), compilationUnit.endPositions);
+        compilationUnit.getImports(), compilationUnit.endPositions, importOrganizer);
   }
 
   ImportStatements(JCExpression packageTree, List<JCImport> importTrees,
-      EndPosTable endPositions) {
+                   EndPosTable endPositions, ImportOrganizer importOrganizer) {
 
     // find start, end positions for current list of imports (for replacement)
     if (importTrees.isEmpty()) {
@@ -76,7 +77,7 @@ public class ImportStatements {
     // sanity check for start/end positions
     Preconditions.checkState(startPos <= endPos);
 
-    importOrganizer = ImportOrganizer.STATIC_FIRST_ORGANIZER;
+    this.importOrganizer = importOrganizer;
 
     // convert list of JCImports to set of unique strings
     importStrings = new TreeSet<>(importOrganizer.comparator());
