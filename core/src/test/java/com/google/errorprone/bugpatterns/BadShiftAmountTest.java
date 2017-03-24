@@ -16,8 +16,10 @@
 
 package com.google.errorprone.bugpatterns;
 
-import com.google.errorprone.CompilationTestHelper;
-import org.junit.Before;
+import com.google.errorprone.junit.BugCheckerRule;
+import com.google.errorprone.junit.CompilationTest;
+import com.google.errorprone.junit.ErrorProneTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -26,23 +28,19 @@ import org.junit.runners.JUnit4;
  * @author Bill Pugh (bill.pugh@gmail.com)
  */
 @RunWith(JUnit4.class)
+@ErrorProneTest(resourcePattern = "testdata/{checker}{method}.java")
 public class BadShiftAmountTest {
 
-  private CompilationTestHelper compilationHelper;
+  @Rule
+  public BugCheckerRule rule = BugCheckerRule.forBugChecker(BadShiftAmount.class);
 
-  @Before
-  public void setUp() {
-    compilationHelper = CompilationTestHelper.newInstance(BadShiftAmount.class, getClass());
-  }
-
+  @CompilationTest
   @Test
-  public void testPositiveCase() throws Exception {
-    compilationHelper.addSourceFile("BadShiftAmountPositiveCases.java").doTest();
+  public void testPositiveCases() throws Exception {
   }
 
+  @CompilationTest
   @Test
-  public void testNegativeCase() throws Exception {
-    compilationHelper.addSourceFile("BadShiftAmountNegativeCases.java").doTest();
+  public void testNegativeCases() throws Exception {
   }
-
 }

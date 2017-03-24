@@ -17,6 +17,9 @@
 package com.google.errorprone.bugpatterns;
 
 import com.google.errorprone.CompilationTestHelper;
+import com.google.errorprone.junit.BugCheckerRule;
+import com.google.errorprone.junit.CompilationTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -25,128 +28,130 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class AmbiguousMethodReferenceTest {
 
-  private final CompilationTestHelper testHelper =
-      CompilationTestHelper.newInstance(AmbiguousMethodReference.class, getClass());
+  @Rule
+  public BugCheckerRule rule = BugCheckerRule.forBugChecker(AmbiguousMethodReference.class);
 
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "public class A {",
+          "  interface B {}",
+          "  interface C {}",
+          "  interface D {}",
+          "",
+          "  // BUG: Diagnostic contains: c(A, D)",
+          "  B c(D d) {",
+          "    return null;",
+          "  }",
+          "  static B c(A a, D d) {",
+          "    return null;",
+          "  }",
+          "}",
+      })
   @Test
   public void positive() {
-    testHelper
-        .addSourceLines(
-            "A.java", //
-            "public class A {",
-            "  interface B {}",
-            "  interface C {}",
-            "  interface D {}",
-            "",
-            "  // BUG: Diagnostic contains: c(A, D)",
-            "  B c(D d) {",
-            "    return null;",
-            "  }",
-            "  static B c(A a, D d) {",
-            "    return null;",
-            "  }",
-            "}")
-        .doTest();
   }
 
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "@SuppressWarnings(\"AmbiguousMethodReference\")",
+          "public class A {",
+          "  interface B {}",
+          "  interface C {}",
+          "  interface D {}",
+          "",
+          "  B c(D d) {",
+          "    return null;",
+          "  }",
+          "  static B c(A a, D d) {",
+          "    return null;",
+          "  }",
+          "}",
+      })
   @Test
   public void suppressedAtClass() {
-    testHelper
-        .addSourceLines(
-            "A.java", //
-            "@SuppressWarnings(\"AmbiguousMethodReference\")",
-            "public class A {",
-            "  interface B {}",
-            "  interface C {}",
-            "  interface D {}",
-            "",
-            "  B c(D d) {",
-            "    return null;",
-            "  }",
-            "  static B c(A a, D d) {",
-            "    return null;",
-            "  }",
-            "}")
-        .doTest();
   }
 
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "public class A {",
+          "  interface B {}",
+          "  interface C {}",
+          "  interface D {}",
+          "",
+          "  @SuppressWarnings(\"AmbiguousMethodReference\")",
+          "  B c(D d) {",
+          "    return null;",
+          "  }",
+          "  // BUG: Diagnostic contains: c(D)",
+          "  static B c(A a, D d) {",
+          "    return null;",
+          "  }",
+          "}",
+      })
   @Test
   public void suppressedAtMethod() {
-    testHelper
-        .addSourceLines(
-            "A.java", //
-            "public class A {",
-            "  interface B {}",
-            "  interface C {}",
-            "  interface D {}",
-            "",
-            "  @SuppressWarnings(\"AmbiguousMethodReference\")",
-            "  B c(D d) {",
-            "    return null;",
-            "  }",
-            "  // BUG: Diagnostic contains: c(D)",
-            "  static B c(A a, D d) {",
-            "    return null;",
-            "  }",
-            "}")
-        .doTest();
   }
 
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "public class A {",
+          "  interface B {}",
+          "  interface C {}",
+          "  interface D {}",
+          "",
+          "  @SuppressWarnings(\"AmbiguousMethodReference\")",
+          "  B c(D d) {",
+          "    return null;",
+          "  }",
+          "  @SuppressWarnings(\"AmbiguousMethodReference\")",
+          "  static B c(A a, D d) {",
+          "    return null;",
+          "  }",
+          "}",
+      })
   @Test
   public void suppressedAtBothMethods() {
-    testHelper
-        .addSourceLines(
-            "A.java", //
-            "public class A {",
-            "  interface B {}",
-            "  interface C {}",
-            "  interface D {}",
-            "",
-            "  @SuppressWarnings(\"AmbiguousMethodReference\")",
-            "  B c(D d) {",
-            "    return null;",
-            "  }",
-            "  @SuppressWarnings(\"AmbiguousMethodReference\")",
-            "  static B c(A a, D d) {",
-            "    return null;",
-            "  }",
-            "}")
-        .doTest();
   }
 
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "public class A {",
+          "  interface B {}",
+          "  interface C {}",
+          "  interface D {}",
+          "",
+          "  B c(D d) {",
+          "    return null;",
+          "  }",
+          "  static B d(A a, D d) {",
+          "    return null;",
+          "  }",
+          "}",
+      })
   @Test
   public void negativeDifferentNames() {
-    testHelper
-        .addSourceLines(
-            "A.java", //
-            "public class A {",
-            "  interface B {}",
-            "  interface C {}",
-            "  interface D {}",
-            "",
-            "  B c(D d) {",
-            "    return null;",
-            "  }",
-            "  static B d(A a, D d) {",
-            "    return null;",
-            "  }",
-            "}")
-        .doTest();
   }
 
+  @CompilationTest(
+      path = "B.java",
+      lines = {
+          "public interface B<T> {",
+          "  static <T> B<T> f() { return null; }",
+          "}",
+      })
+  @CompilationTest(
+      path = "A.java",
+      lines = {
+          "public abstract class A<T> implements B<T> {",
+          "  public static <T> A<T> f() { return null; }",
+          "}",
+      })
   @Test
   public void negativeStatic() {
-    testHelper
-        .addSourceLines(
-            "B.java", //
-            "public interface B<T> {",
-            "  static <T> B<T> f() { return null; }",
-            "}")
-        .addSourceLines(
-            "A.java", //
-            "public abstract class A<T> implements B<T> {",
-            "  public static <T> A<T> f() { return null; }",
-            "}")
-        .doTest();
   }
 }

@@ -72,6 +72,13 @@ public class BugCheckerRefactoringTestHelper {
       void verifyMatch(JavaFileObject refactoredSource, JavaFileObject expectedSource) {
         assertAbout(javaSource()).that(refactoredSource).parsesAs(expectedSource);
       }
+    },
+    DEFAULT {
+      @Override
+      void verifyMatch(JavaFileObject refactoredSource, JavaFileObject expectedSource)
+          throws IOException {
+        AST_MATCH.verifyMatch(refactoredSource, expectedSource);
+      }
     };
 
     abstract void verifyMatch(JavaFileObject refactoredSource, JavaFileObject expectedSource)
