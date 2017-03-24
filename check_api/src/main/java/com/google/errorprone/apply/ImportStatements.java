@@ -19,9 +19,7 @@ package com.google.errorprone.apply;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.sun.tools.javac.tree.EndPosTable;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
 import com.sun.tools.javac.tree.JCTree.JCExpression;
@@ -40,18 +38,7 @@ import java.util.TreeSet;
  */
 public class ImportStatements {
 
-  /** An {@link Ordering} that sorts import statements according to the Google Java Style Guide. */
-  private static final Ordering<String> IMPORT_ORDERING =
-      new Ordering<String>() {
-        @Override
-        public int compare(String s1, String s2) {
-          return ComparisonChain.start()
-              .compareTrueFirst(isStatic(s1), isStatic(s2))
-              .compare(s1, s2)
-              .result();
-        }
-      };
-
+  private final ImportOrganizer importOrganizer;
   private int startPos = Integer.MAX_VALUE;
   private int endPos = -1;
   private final SortedSet<String> importStrings;
@@ -62,7 +49,7 @@ public class ImportStatements {
         compilationUnit.getImports(), compilationUnit.endPositions);
   }
 
-  public ImportStatements(JCExpression packageTree, List<JCImport> importTrees,
+  ImportStatements(JCExpression packageTree, List<JCImport> importTrees,
       EndPosTable endPositions) {
 
     // find start, end positions for current list of imports (for replacement)
@@ -89,8 +76,10 @@ public class ImportStatements {
     // sanity check for start/end positions
     Preconditions.checkState(startPos <= endPos);
 
-    // convert list of JCImports to list of strings
-    importStrings = new TreeSet<>(IMPORT_ORDERING);
+    importOrganizer = ImportOrganizer.STATIC_FIRST_ORGANIZER;
+
+    // convert list of JCImports to set of unique strings
+    importStrings = new TreeSet<>(importOrganizer.comparator());
     importStrings.addAll(
         Lists.transform(
             importTrees,
@@ -163,7 +152,7 @@ public class ImportStatements {
     return importStrings.removeAll(importsToRemove);
   }
 
-  /** Returns a string representation of the imports as Java code in proper Google Java Style. */
+  /** Returns a string representation of the imports as Java code in correct order. */
   @Override
   public String toString() {
     if (importStrings.size() == 0) {
@@ -177,17 +166,12 @@ public class ImportStatements {
       result.append('\n');
     }
 
-    // output sorted imports, with a line break between static and non-static imports
-    boolean first = true;
-    boolean prevIsStatic = true;
-    for (String importString : importStrings) {
-      boolean isStatic = isStatic(importString);
-      if (!first && prevIsStatic && !isStatic) {
-        result.append('\n');
+    // output organized imports
+    for (String importString : importOrganizer.organizeImports(importStrings)) {
+      if (!importString.isEmpty()) {
+        result.append(importString).append(';');
       }
-      result.append(importString).append(";\n");
-      prevIsStatic = isStatic;
-      first = false;
+      result.append('\n');
     }
 
     String replacementString = result.toString();
@@ -196,9 +180,5 @@ public class ImportStatements {
     } else {
       return CharMatcher.whitespace().trimTrailingFrom(replacementString); // trim last newline
     }
-  }
-
-  private static boolean isStatic(String importString) {
-    return importString.startsWith("import static");
   }
 }
