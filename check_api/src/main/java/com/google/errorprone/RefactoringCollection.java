@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.errorprone.ErrorProneOptions.PatchingOptions;
 import com.google.errorprone.apply.DescriptionBasedDiff;
 import com.google.errorprone.apply.DiffApplier;
 import com.google.errorprone.apply.FileDestination;
@@ -69,38 +70,39 @@ class RefactoringCollection implements DescriptionListener.Factory {
     CHANGED,
   }
 
-  static RefactoringCollection refactorInPlace() {
+  static RefactoringCollection refactor(PatchingOptions patchingOptions) {
     Path rootPath = buildRootPath();
-    return new RefactoringCollection(
-        rootPath,
-        new FsFileDestination(rootPath),
-        () ->
-            RefactoringResult.create(
-                "Refactoring changes were successfully applied, please check the refactored code "
-                    + "and recompile.",
-                RefactoringResultType.CHANGED));
-  }
+    FileDestination fileDestination;
+    Callable<RefactoringResult> postProcess;
 
-  static RefactoringCollection refactorToPatchFile(String baseDirectory) {
-    Path rootPath = buildRootPath();
-    Path baseDir = rootPath.resolve(baseDirectory);
-    Path patchFilePath = baseDir.resolve("error-prone.patch");
+    if (patchingOptions.inPlace()) {
+      fileDestination = new FsFileDestination(rootPath);
+      postProcess = () ->
+              RefactoringResult.create(
+                      "Refactoring changes were successfully applied, please check the refactored code "
+                              + "and recompile.",
+                      RefactoringResultType.CHANGED);
+    } else {
+      Path baseDir = rootPath.resolve(patchingOptions.baseDirectory());
+      Path patchFilePath = baseDir.resolve("error-prone.patch");
 
-    PatchFileDestination patchFileDestination = new PatchFileDestination(baseDir, rootPath);
-    Callable<RefactoringResult> postProcess =
-        () -> {
-          try {
-            writePatchFile(patchFileDestination, patchFilePath);
-            return RefactoringResult.create(
-                "Changes were written to "
-                    + patchFilePath
-                    + ". Please inspect the file and apply with: patch -p0 -u -i error-prone.patch",
-                RefactoringResultType.CHANGED);
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to emit patch file!", e);
-          }
-        };
-    return new RefactoringCollection(rootPath, patchFileDestination, postProcess);
+      PatchFileDestination patchFileDestination = new PatchFileDestination(baseDir, rootPath);
+      postProcess = () -> {
+        try {
+          writePatchFile(patchFileDestination, patchFilePath);
+          return RefactoringResult.create(
+                  "Changes were written to "
+                          + patchFilePath
+                          + ". Please inspect the file and apply with: patch -p0 -u -i error-prone.patch",
+                  RefactoringResultType.CHANGED);
+        } catch (IOException e) {
+          throw new RuntimeException("Failed to emit patch file!", e);
+        }
+      };
+      fileDestination = patchFileDestination;
+    }
+
+    return new RefactoringCollection(rootPath, fileDestination, postProcess);
   }
 
   private RefactoringCollection(
