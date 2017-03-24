@@ -62,6 +62,22 @@ public interface ImportOrganizer {
   }
 
   /**
+   * A {@link Comparator} that sorts import statements so that all static imports come after
+   * all non-static imports and otherwise sorted alphabetically.
+   */
+  static Comparator<String> staticLast() {
+    return new Ordering<String>() {
+      @Override
+      public int compare(String s1, String s2) {
+        return ComparisonChain.start()
+            .compareFalseFirst(isStatic(s1), isStatic(s2))
+            .compare(s1, s2)
+            .result();
+      }
+    };
+  }
+
+  /**
    * An organizer that will insert a blank link between static and non-static imports as ordered by
    * the supplied {@link Comparator}.
    *
@@ -103,4 +119,10 @@ public interface ImportOrganizer {
    * Guide, i.e. static first, static and non-static separated by blank line.
    */
   ImportOrganizer STATIC_FIRST_ORGANIZER = separateStaticAndNonStatic(staticFirst());
+
+  /**
+   * An {@link ImportOrganizer} that sorts import statements so that non-static imports come first,
+   * and static and non-static separated by blank line.
+   */
+  ImportOrganizer STATIC_LAST_ORGANIZER = separateStaticAndNonStatic(staticLast());
 }

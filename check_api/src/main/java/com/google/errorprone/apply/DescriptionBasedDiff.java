@@ -48,21 +48,28 @@ public final class DescriptionBasedDiff implements DescriptionListener, Diff {
   private final ImportOrganizer importOrganizer;
 
   public static DescriptionBasedDiff create(JCCompilationUnit compilationUnit) {
-    return new DescriptionBasedDiff(compilationUnit, false);
+    return new DescriptionBasedDiff(compilationUnit, false, ImportOrganizer.STATIC_FIRST_ORGANIZER);
+  }
+
+  public static DescriptionBasedDiff create(
+      JCCompilationUnit compilationUnit, ImportOrganizer importOrganizer) {
+    return new DescriptionBasedDiff(compilationUnit, false, importOrganizer);
   }
 
   public static DescriptionBasedDiff createIgnoringOverlaps(JCCompilationUnit compilationUnit) {
-    return new DescriptionBasedDiff(compilationUnit, true);
+    return new DescriptionBasedDiff(compilationUnit, true, ImportOrganizer.STATIC_FIRST_ORGANIZER);
   }
 
-  private DescriptionBasedDiff(JCCompilationUnit compilationUnit, boolean ignoreOverlappingFixes) {
+  private DescriptionBasedDiff(
+      JCCompilationUnit compilationUnit, boolean ignoreOverlappingFixes,
+      ImportOrganizer importOrganizer) {
     this.compilationUnit = checkNotNull(compilationUnit);
     this.sourcePath = compilationUnit.getSourceFile().toUri().getPath();
     this.ignoreOverlappingFixes = ignoreOverlappingFixes;
     this.importsToAdd = new LinkedHashSet<>();
     this.importsToRemove = new LinkedHashSet<>();
     this.endPositions = compilationUnit.endPositions;
-    importOrganizer = ImportOrganizer.STATIC_FIRST_ORGANIZER;
+    this.importOrganizer = importOrganizer;
   }
 
   @Override
