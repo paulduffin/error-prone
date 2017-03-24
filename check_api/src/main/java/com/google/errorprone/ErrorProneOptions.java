@@ -24,6 +24,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.errorprone.apply.ImportOrganizer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -53,6 +54,7 @@ public class ErrorProneOptions {
   private static final String IGNORE_UNKNOWN_CHECKS_FLAG = "-XepIgnoreUnknownCheckNames";
   private static final String DISABLE_WARNINGS_IN_GENERATED_CODE_FLAG =
       "-XepDisableWarningsInGeneratedCode";
+  private static final String IMPORT_ORDER_PREFIX = "-XepImportOrder:";
 
   /**
    * see {@link javax.tools.OptionChecker#isSupportedOption(String)}
@@ -103,11 +105,14 @@ public class ErrorProneOptions {
 
     abstract Optional<Supplier<CodeTransformer>> customRefactorer();
 
+    abstract ImportOrganizer importOrganizer();
+
     static Builder builder() {
       return new AutoValue_ErrorProneOptions_PatchingOptions.Builder()
           .baseDirectory("")
           .inPlace(false)
-          .namedCheckers(Collections.emptySet());
+          .namedCheckers(Collections.emptySet())
+          .importOrganizer(ImportOrganizer.STATIC_FIRST_ORGANIZER);
     }
 
     @AutoValue.Builder
@@ -120,6 +125,8 @@ public class ErrorProneOptions {
       abstract Builder baseDirectory(String baseDirectory);
 
       abstract Builder customRefactorer(Supplier<CodeTransformer> refactorer);
+
+      abstract Builder importOrganizer(ImportOrganizer importOrganizer);
 
       abstract PatchingOptions autoBuild();
 
@@ -325,6 +332,10 @@ public class ErrorProneOptions {
               Iterable<String> checks = Splitter.on(',').trimResults().split(remaining);
               builder.patchingOptionsBuilder().namedCheckers(ImmutableSet.copyOf(checks));
             }
+          } else if (arg.startsWith(IMPORT_ORDER_PREFIX)) {
+            String remaining = arg.substring(PATCH_CHECKS_PREFIX.length());
+            ImportOrganizer importOrganizer = ImportOrderParser.getImportOrganizer(remaining);
+            builder.patchingOptionsBuilder().importOrganizer(importOrganizer);
           } else {
             outputArgs.add(arg);
           }

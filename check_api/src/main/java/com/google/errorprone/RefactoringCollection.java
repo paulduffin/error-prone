@@ -29,6 +29,7 @@ import com.google.errorprone.apply.FileDestination;
 import com.google.errorprone.apply.FileSource;
 import com.google.errorprone.apply.FsFileDestination;
 import com.google.errorprone.apply.FsFileSource;
+import com.google.errorprone.apply.ImportOrganizer;
 import com.google.errorprone.apply.PatchFileDestination;
 import com.google.errorprone.matchers.Description;
 import com.sun.tools.javac.tree.JCTree.JCCompilationUnit;
@@ -53,6 +54,7 @@ class RefactoringCollection implements DescriptionListener.Factory {
   private final FileDestination fileDestination;
   private final Callable<RefactoringResult> postProcess;
   private final DescriptionListener.Factory descriptionsFactory;
+  private final ImportOrganizer importOrganizer;
 
   @AutoValue
   abstract static class RefactoringResult {
@@ -102,15 +104,18 @@ class RefactoringCollection implements DescriptionListener.Factory {
       fileDestination = patchFileDestination;
     }
 
-    return new RefactoringCollection(rootPath, fileDestination, postProcess);
+    ImportOrganizer importOrganizer = patchingOptions.importOrganizer();
+    return new RefactoringCollection(rootPath, fileDestination, postProcess, importOrganizer);
   }
 
   private RefactoringCollection(
-      Path rootPath, FileDestination fileDestination, Callable<RefactoringResult> postProcess) {
+      Path rootPath, FileDestination fileDestination, Callable<RefactoringResult> postProcess,
+      ImportOrganizer importOrganizer) {
     this.rootPath = rootPath;
     this.fileDestination = fileDestination;
     this.postProcess = postProcess;
     this.descriptionsFactory = JavacErrorDescriptionListener.providerForRefactoring();
+    this.importOrganizer = importOrganizer;
   }
 
   private static Path buildRootPath() {
@@ -128,7 +133,7 @@ class RefactoringCollection implements DescriptionListener.Factory {
     DelegatingDescriptionListener delegate =
         new DelegatingDescriptionListener(
             descriptionsFactory.getDescriptionListener(log, compilation),
-            DescriptionBasedDiff.createIgnoringOverlaps(compilation));
+            DescriptionBasedDiff.createIgnoringOverlaps(compilation, importOrganizer));
     foundSources.put(sourceFile, delegate);
     return delegate;
   }

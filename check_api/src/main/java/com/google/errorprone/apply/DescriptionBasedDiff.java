@@ -47,17 +47,14 @@ public final class DescriptionBasedDiff implements DescriptionListener, Diff {
   private final Replacements replacements = new Replacements();
   private final ImportOrganizer importOrganizer;
 
-  public static DescriptionBasedDiff create(JCCompilationUnit compilationUnit) {
-    return new DescriptionBasedDiff(compilationUnit, false, ImportOrganizer.STATIC_FIRST_ORGANIZER);
-  }
-
   public static DescriptionBasedDiff create(
       JCCompilationUnit compilationUnit, ImportOrganizer importOrganizer) {
     return new DescriptionBasedDiff(compilationUnit, false, importOrganizer);
   }
 
-  public static DescriptionBasedDiff createIgnoringOverlaps(JCCompilationUnit compilationUnit) {
-    return new DescriptionBasedDiff(compilationUnit, true, ImportOrganizer.STATIC_FIRST_ORGANIZER);
+  public static DescriptionBasedDiff createIgnoringOverlaps(
+      JCCompilationUnit compilationUnit, ImportOrganizer importOrganizer) {
+    return new DescriptionBasedDiff(compilationUnit, true, importOrganizer);
   }
 
   private DescriptionBasedDiff(
